@@ -3,6 +3,12 @@
  * takuzirra@twitter
  * mail: taku3wzr@gmail.com
  * 
+ * Arduino pro micro   -  MPU-9250 (KP-9250)
+ * VCC 3.3V            -  VCC (CN1 P1)
+ * GND                 -  GND (CN1 P4)
+ * SDA P2              -  SCL P23 (CN1 P2)
+ * SCL P3              -  SDA P24 (CN1 P3)
+ * 
  * reference:
  * 1. http://www.lucidarme.me/?p=5057
  */
@@ -78,7 +84,7 @@ void setup()
   // Request continuous magnetometer measurements in 16 bits
   I2CwriteByte(MAG_ADDRESS,0x0A,0x16);
   
-  pinMode(13, OUTPUT);
+  //pinMode(13, OUTPUT);
   Timer1.initialize(10000);         // initialize timer1, and set a 1/2 second period
   Timer1.attachInterrupt(callback);  // attaches callback() as a timer overflow interrupt
   
@@ -94,10 +100,11 @@ int16_t min_mag_x = 500;
 int16_t max_mag_y = 1;
 int16_t max_mag_z = 1;
 
+
 void callback()
 { 
   intFlag=true;
-  digitalWrite(13, digitalRead(13) ^ 1);
+  //digitalWrite(13, digitalRead(13) ^ 1);
 }
 
 // Main loop, read and display data
@@ -204,11 +211,11 @@ void loop()
   
   // Create 16 bits values from 8 bits data
 
-  int16_t mag_offset = 500;
+  int16_t mag_offset = 0;
   // Magnetometer
-  int16_t mx=-(Mag[3]<<8 | Mag[2]) + mag_offset;
-  int16_t my=-(Mag[1]<<8 | Mag[0]) + mag_offset;
-  int16_t mz=-(Mag[5]<<8 | Mag[4]) + mag_offset;
+  int16_t mx=(Mag[3]<<8 | Mag[2]) + mag_offset;
+  int16_t my=(Mag[1]<<8 | Mag[0]) + mag_offset;
+  int16_t mz=(Mag[5]<<8 | Mag[4]) + mag_offset;
   
   // Magnetometer
   /*

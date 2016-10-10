@@ -11,10 +11,12 @@
  * 
  * reference:
  * 1. http://www.lucidarme.me/?p=5057
+ * 2. http://myenigma.hatenablog.com/entry/2016/04/10/211919
  */
  
 #include <Wire.h>
 #include <TimerOne.h>
+#include <math.h>
 
 #define    MPU9250_ADDRESS            0x68
 #define    MAG_ADDRESS                0x0C
@@ -95,10 +97,12 @@ void setup()
 // Counter
 long int cpt = 0;
 int16_t max_acc = 1;
-int16_t max_mag_x = 1;
-int16_t min_mag_x = 500;
-int16_t max_mag_y = 1;
-int16_t max_mag_z = 1;
+int16_t max_mag_x = -1000;
+int16_t min_mag_x =  1000;
+int16_t max_mag_y = -1000;
+int16_t min_mag_y =  1000;
+int16_t max_mag_z = -1000;
+int16_t min_mag_z =  1000;
 
 
 void callback()
@@ -134,18 +138,27 @@ void loop()
   // Create 16 bits values from 8 bits data
   
   // Accelerometer
-  int16_t ax=-(Buf[0]<<8 | Buf[1]);
-  int16_t ay=-(Buf[2]<<8 | Buf[3]);
-  int16_t az=Buf[4]<<8 | Buf[5];
+  int16_t ax = (Buf[0]<<8 | Buf[1]);
+  int16_t ay = (Buf[2]<<8 | Buf[3]);
+  int16_t az = (Buf[4]<<8 | Buf[5]);
 
+  double axd = (double)(ax);
+  double ayd = (double)(ay);
+  double azd = (double)(az);
+  
   // Gyroscope
-  // int16_t gx=-(Buf[8]<<8 | Buf[9]);
-  // int16_t gy=-(Buf[10]<<8 | Buf[11]);
-  // int16_t gz=Buf[12]<<8 | Buf[13];
+  // int16_t gx = -(Buf[8]<<8 | Buf[9]);
+  // int16_t gy = -(Buf[10]<<8 | Buf[11]);
+  // int16_t gz =  (Buf[12]<<8 | Buf[13]);
   
     // Display values
   
   // Accelerometer
+  double phi = atan(ayd/azd);   //roll angular
+  double cos_phi = cos(phi);
+  double sin_phi = sin(phi);
+  double psi  = atan(-axd/(ayd*sin_phi+azd*cos_phi));  //pitch angular
+
   /*
   Serial.print (ax,DEC); 
   Serial.print ("\t");
@@ -183,15 +196,16 @@ void loop()
   Serial.print (max_acc,DEC);  
   Serial.print ("\t");
   */
-  /*
+  
   // Gyroscope
+  /*
   Serial.print (gx,DEC); 
   Serial.print ("\t");
   Serial.print (gy,DEC);
   Serial.print ("\t");
   Serial.print (gz,DEC);  
   Serial.print ("\t");
-*/
+　*/
 
   // _____________________
   // :::  Magnetometer ::: 
@@ -243,13 +257,23 @@ void loop()
   {
     min_mag_x = mx;
   }
-  if(max_mag_y < abs(my))
+
+  if(max_mag_y < my)
   {
-    max_mag_y = abs(my);
+    max_mag_y = my;
   }
-  if(max_mag_z < abs(mz))
+  if(min_mag_y > my)
   {
-    max_mag_z = abs(mz);
+    min_mag_y = my;
+  }
+  
+  if(max_mag_z < mz)
+  {
+    max_mag_z = mz;
+  }
+  if(min_mag_z > mz)
+  {
+    min_mag_z = mz;
   }
 
   double north_mag_x = (double)(mx - min_mag_x) / (double)(max_mag_x - min_mag_x) * (double)(180.0);
@@ -259,6 +283,15 @@ void loop()
     north_mag_x = 180.0;  
   }*/
 
+  double mxo = mx - min_mag_x;  //mx - mx_offset
+  double myo = my - min_mag_y;  //my - my_offset
+  double mzo = mz - min_mag_z;  //mz - mz_offset
+  double cos_psi = cos(psi);
+  double sin_psi = sin(psi);
+  double upper_formula = mzo*sin_phi - myo*cos_phi;
+  double lower_formula = mxo*cos_psi + myo*sin_psi*sin_phi + mzo*sin_psi*cos_phi;
+  double theta = atan(upper_formula/lower_formula) * 180 / M_PI;
+  
   Serial.print(north_mag_x, 4);
   Serial.print("\t");
 
@@ -267,6 +300,9 @@ void loop()
 
   Serial.print (min_mag_x,DEC);  
   Serial.print ("\t");
+  
+  Serial.print(theta, 4);
+  Serial.print("\t");
   
   // End of line
   Serial.println("");
